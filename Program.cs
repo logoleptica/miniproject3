@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Diagnostics.Contracts;
 using Color = System.ConsoleColor;
 class Program
 {
     static void Main(string[] args)
     {
         Greeting();
+        Asset.createDummyAssets();
 
         while (true)
         {
@@ -35,9 +37,7 @@ class Program
         Print("\n\n\tChoose an option:\n\n", Color.White);
         Print("1. Add a new asset\n", Color.White);
         Print("2. Display all assets\n", Color.White);
-        Print("3. Edit asset details\n", Color.White);
-        Print("4. Remove an asset\n", Color.White);
-        Print("5. Quit\n\n", Color.White);
+        Print(". Quit\n\n", Color.White);
         Print("\tEnter your choice: \n", Color.White);
     }
     private static void HandleInput()
@@ -52,15 +52,7 @@ class Program
         {
             Asset.DisplayAssets();
         }
-        // else if (keyChar == '3' || keyChar == 'e')
-        // {
-        //     Asset.EditAsset();
-        // }
-        // else if (keyChar == '4' || keyChar == 'r')
-        // {
-        //     Asset.RemoveAsset();
-        // }
-        else if (keyChar == '5' || keyChar == 'q')
+        else if (keyChar == '3' || keyChar == 'q')
         {
             Environment.Exit(0);
         }
@@ -108,8 +100,7 @@ class Asset
         string brand = Console.ReadLine();
         Program.Print("Enter model: ");
         string model = Console.ReadLine();
-        Program.Print("Enter offices: ");
-        string offices = Console.ReadLine();
+
         double price;
         while (true)
         {
@@ -126,8 +117,8 @@ class Asset
             }
 
         }
-        Program.Print("Enter currency (usd, eu, etc.): ");
-        string currency = Console.ReadLine();
+        string office = ValidateCountry();
+        string currency = GetCurrency(office);
         DateTime purchaseDate;
         while (true)
         {
@@ -141,48 +132,121 @@ class Asset
             catch (Exception e)
             {
                 Program.Print("Invalid input. Please enter a valid date.\n");
+                Program.Print(e.Message);
 
             }
         }
-
-
-        assets.Add(new(type, brand, model, offices, price, currency, purchaseDate));
+        assets.Add(new(type, brand, model, office, price, currency, purchaseDate));
         Program.Print("Asset added successfully!");
     }
-    public static void DisplayAssets()
+
+    public static string ValidateCountry()
     {
-        Program.Print("\nAll assets:\n");
+
+        while (true)
+        {
+            Program.Print("Enter country: ");
+            string country = Console.ReadLine().ToLower();
+            if (country == "usa")
+            {
+                return "USA";
+            }
+            else if (country == "uk")
+            {
+                return "UK";
+            }
+            else if (country == "china")
+            {
+                return "China";
+            }
+            else if (country == "eu")
+            {
+                return "EU";
+            }
+            Program.Print("\nValid regions are EU, USA, UK, China\n");
+
+        }
+
+    }
+    public static string GetCurrency(string country)
+    {
+        if (country.ToLower() == "usa")
+        {
+            return ("USD");
+        }
+        else if (country.ToLower() == "uk")
+        {
+            return ("GBP");
+        }
+        else if (country.ToLower() == "china")
+        {
+            return ("CNY");
+        }
+        else
+        {
+            return ("EUR");
+        }
+    }
+    public static void DisplayAssets()
+
+    {
+
+        Program.Print("\n   TYPE".PadRight(17) + "BRAND".PadRight(17) + "MODEL".PadRight(17) + "OFFICE".PadRight(17) +
+                            "PRICE".PadRight(17) + "CURRENCY".PadRight(20) + "PURCHASE DATE".PadRight(17), Color.Magenta);
+        TimeSpan timeSincePurchase;
+        double threeYears = 365 * 3;
+        double month = 30;
+
         foreach (Asset asset in assets)
         {
-            Program.Print($"\n{asset.ReturnDetails()}\n");
+            timeSincePurchase = DateTime.Now - asset.PurchaseDate;
+            if (timeSincePurchase.Days > threeYears)
+            {
+                Program.Print($"\n{asset.ReturnDetails(asset)}\n", Color.Red);
+
+            }
+            else if (timeSincePurchase.Days > threeYears - (month * 6))
+            {
+                Program.Print($"\n{asset.ReturnDetails(asset)}\n", Color.Yellow);
+            }
+
+            else
+            {
+
+                Program.Print($"\n{asset.ReturnDetails(asset)}\n", Color.Green);
+
+            }
         }
     }
     public static void createDummyAssets()
     {
         assets.Add(new Computers("Computers", "MacBook", "Pro 2021", "Office A", 1500, "usd", new DateTime(2021, 5, 15)));
-        assets.Add(new Computers("Computers", "Asus", "ZenBook", "Office B", 1200, "eu", new DateTime(2020, 8, 20)));
-        assets.Add(new Mobiles("Mobile Phones", "iPhone", "13", "Office C", 1000, "usa", new DateTime(2022, 11, 5)));
-        assets.Add(new Mobiles("Mobile Phones", "Samsung", "Galaxy S21", "Office B", 900, "eu", new DateTime(2021, 9, 10)));
+        assets.Add(new Computers("Computers", "Asus", "ZenBook", "Office B", 1200, "eur", new DateTime(2024, 8, 20)));
+        assets.Add(new Mobiles("Mobiles", "iPhone", "13", "Office C", 1000, "cny", new DateTime(2021, 11, 11)));
+        assets.Add(new Mobiles("Mobiles", "Samsung", "Galaxy S21", "Office B", 900, "gbp", new DateTime(2021, 9, 10)));
     }
-    public string ReturnDetails()
+
+
+    public string ReturnDetails(Asset asset)
     {
-        return $"{Type} {Brand} {Model} located in {Offices}, purchased for {Price} {Currency} on {PurchaseDate.ToShortDateString()}";
+        return $"{asset.Type.PadRight(13)}{asset.Brand.PadRight(17)}{asset.Model.PadRight(17)} {asset.Offices.PadRight(17)}{asset.Price.ToString().PadRight(17)}{asset.Currency.PadRight(20)}{asset.PurchaseDate.ToString("yyyy-MM-dd").PadRight(17)}";
+
+
     }
 
-}
-
-class Computers : Asset
-{
-    // Constructor for Computers that calls the base class constructor
-    public Computers(string type, string brand, string model,
-    string offices, double price, string currency, DateTime purchaseDate)
-    : base(type, brand, model, offices, price, currency, purchaseDate)
+    class Computers : Asset
     {
-    }
+        // Constructor for Computers that calls the base class constructor
+        public Computers(string type, string brand, string model,
+        string offices, double price, string currency, DateTime purchaseDate)
+        : base(type, brand, model, offices, price, currency, purchaseDate)
+        {
+        }
 
-}
-class Mobiles : Asset
-{
-    public Mobiles(string type, string brand, string model, string office, double price, string currency, DateTime purchaseDate)
-        : base(type, brand, model, office, price, currency, purchaseDate) { }
+    }
+    class Mobiles : Asset
+    {
+        public Mobiles(string type, string brand, string model, string office, double price, string currency, DateTime purchaseDate)
+            : base(type, brand, model, office, price, currency, purchaseDate) { }
+    }
 }
